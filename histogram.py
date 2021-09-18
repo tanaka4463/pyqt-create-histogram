@@ -25,7 +25,6 @@ class MainWindow(QMainWindow):
         self.canvas = Canvas()
         self.setCentralWidget(self.canvas)
 
-
         # zoomwidge
         self.zoomWidget = ZoomWidget()
         self.zoomWidget.valueChanged.connect(self.paintCanvas)
@@ -52,7 +51,7 @@ class MainWindow(QMainWindow):
         # menubarにメニューを追加
         self.filemenu = self.menubar.addMenu('File')
         
-        # 追記
+        # viewbarにメニューを追加
         self.viewmenu = self.menubar.addMenu('View')
 
         # アクションの追加
@@ -103,7 +102,6 @@ class MainWindow(QMainWindow):
         value = int(100 * value)
         self.zoomWidget.setValue(value)
 
-
     def resizeEvent(self, event):
         # canvasがTrue かつ pixmapがnullじゃない場合
         if self.canvas and not self.canvas.pixmap.isNull():
@@ -115,13 +113,10 @@ class MainWindow(QMainWindow):
         colors = ['r', 'g', 'b']
         for i, color in enumerate(colors):
             hist = cv2.calcHist([np.uint8(self.canvas.target_area)], [i], None, [256], [0, 256])
+            hist = np.sqrt(hist)
 
             self.graph_window.axes.plot(hist, color = color)
             self.graph_window.fig.canvas.draw()
-
-    def mouseReleaseEvent(self, event):
-        self.right_dock.update()
-        self.update()
 
 
 class GraphWindow(QFrame):
@@ -153,7 +148,6 @@ class Canvas(QWidget):
         self.pixmap = QtGui.QPixmap()
         self.scale = 1.0
 
-        ## 追記 ##
         self.shapes = []
         self.rectangle = Shape()
         self.current = None
@@ -205,7 +199,6 @@ class Canvas(QWidget):
         for shape in self.shapes:
             shape.paint(p)
         
-
         # paintの終了
         p.end()
     
@@ -220,8 +213,6 @@ class Canvas(QWidget):
 
         return QtCore.QPoint(int(x), int(y))
 
-
-    ## 追記 ##
     # Pixmap外
     def outOfPixmap(self, point):
         w = self.pixmap.width()
@@ -283,7 +274,7 @@ class Canvas(QWidget):
 
         # 左クリックが押された場合
         if event.button() == QtCore.Qt.LeftButton:
-            ## 追記 ##
+            # 画像の範囲内の場合
             if not self.outOfPixmap(pos):
                 self.current = Shape()
                 self.current.addPoint(pos)
@@ -294,7 +285,7 @@ class Canvas(QWidget):
         if not self.current:
             return
 
-        ## 追記 ##
+        # 画像の範囲外の場合
         if self.outOfPixmap(pos):
             # 四角を描画するための位置情報
             pos = self.intersectionPoint(self.current[0], pos)
@@ -319,11 +310,14 @@ class Canvas(QWidget):
         rgbs = []
         for w in range(self.w):
             for h in range(self.h):
+                # pixmap -> QImageからQRGB値を取得
                 qrgb = self.pixmap.toImage().pixel(self.x + w, self.y + h)
                 rgb = [QtGui.qRed(qrgb), QtGui.qGreen(qrgb), QtGui.qBlue(qrgb)]
                 rgbs.append(rgb)
-
+        
+        # 選択した範囲のrgb情報
         self.target_area = np.array(rgbs).reshape(self.h, self.w, 3)
+        
 
     # 初期化関数
     def initialize(self):
