@@ -358,7 +358,7 @@ class Shape(object):
         if self.points:
             # paintEventで使用するpenを設定
             pen = QtGui.QPen(self.rectangle_color)
-            pen.setWidth(max(1, int(round(10 / self.scale))))
+            pen.setWidth(max(1, int(round(5 / self.scale))))
             painter.setPen(pen)
 
             # ウィンドウに可視化するための位置情報
